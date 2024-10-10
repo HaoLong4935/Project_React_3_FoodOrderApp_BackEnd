@@ -1,0 +1,4 @@
+npm init -y
+npm i express cors mongodb mongoose
+npm i dotenv 
+npm i ts-node typescript nodemon @types/express @types/cors @types/node --save-dev
