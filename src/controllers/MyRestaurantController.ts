@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import Restaurant from "../models/restaurant";
 import cloudinary from "cloudinary"
 import mongoose from "mongoose";
+import Order from "../models/order";
+
 const createMyRestaurant = async (req: Request, res: Response) => {
     try {
         //Find will return an array -> Cause bug
@@ -27,6 +29,21 @@ const createMyRestaurant = async (req: Request, res: Response) => {
     }
 }
 
+const getMyRestaurantOrders = async (req: Request, res: Response) => {
+    try {
+        const restaurant = await Restaurant.findOne({ user: req.userId })
+        if (!restaurant) {
+            return res.status(404).json({ message: "Restaurant not in get order found!" })
+        }
+        const orders = await Order.find({ restaurant: restaurant._id }).populate("restaurant").populate("user")
+        res.json(orders)
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Something went wrong with get Order" })
+    }
+}
+
 const getMyRestaurant = async (req: Request, res: Response) => {
     try {
         const restaurant = await Restaurant.findOne(
@@ -39,6 +56,29 @@ const getMyRestaurant = async (req: Request, res: Response) => {
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Something went wrong with GET Restaurant" })
+    }
+}
+
+const updateMyOrderStatus = async (req: Request, res: Response) => {
+    try {
+        const { orderId } = req.params;
+        const { status } = req.body
+        const order = await Order.findById(orderId)
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" })
+        }
+        console.log("Order co restaurant la ", order.restaurant);
+        const restaurant = await Restaurant.findById(order.restaurant)
+        if (restaurant?.user?._id.toString() !== req.userId) {
+            return res.status(404).send()
+        }
+        order.status = status
+        await order.save();
+        res.status(200).json(order)
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Something went wrong with PATCH Order" })
     }
 }
 
@@ -86,5 +126,7 @@ const uploadImage = async (file: Express.Multer.File) => {
 export default {
     createMyRestaurant,
     getMyRestaurant,
-    updateMyRestaurant
+    updateMyRestaurant,
+    getMyRestaurantOrders,
+    updateMyOrderStatus
 }
